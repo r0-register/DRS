@@ -1,0 +1,72 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: drs-scheduler-cr
+  namespace: kube-system
+rules:
+  - apiGroups: ["events.k8s.io"]
+    resources: ["events"]
+    verbs: ["create"]
+
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["csistoragecapacities", "csidrivers"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: [""]
+    resources: 
+      - "namespaces"
+      - "nodes"
+      - "pods"
+      - "persistentvolumes"
+      - "persistentvolumeclaims"
+      - "services"
+      - "replicationcontrollers"
+      - "configmaps"
+    verbs: ["get", "list", "watch", "update", "patch", "create"]
+
+  - apiGroups: [""]
+    resources: 
+      - "events"
+      - "pods/status"
+      - "pods/binding"
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+  - apiGroups: ["apps"]
+    resources: ["replicasets", "statefulsets"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses", "csinodes"]
+    verbs: ["get", "list", "watch"]
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: drs-scheduler-sa
+  namespace: kube-system
+
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: drs-scheduler-crb
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: drs-scheduler-cr
+subjects:
+  - kind: ServiceAccount
+    name: drs-scheduler-sa
+    namespace: kube-system

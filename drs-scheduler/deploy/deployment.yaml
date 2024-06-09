@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: drs-scheduler-config
+  namespace: kube-system
+data:
+  scheduler-config.yaml: |
+    apiVersion: kubescheduler.config.k8s.io/v1beta2
+    kind: KubeSchedulerConfiguration
+    leaderElection:
+      leaderElect: true
+      leaseDuration: 15s
+      renewDeadline: 10s
+      retryPeriod: 2s
+      resourceLock: leases
+      resourceName: drs-scheduler
+      resourceNamespace: kube-system
+    profiles:
+      - schedulerName: drs-scheduler
+        plugins:
+          filter:
+            enabled:
+              - name: "DQNPlugin"
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drs-scheduler
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drs-scheduler
+  template:
+    metadata:
+      labels:
+        app: drs-scheduler
+    spec:
+      serviceAccount: drs-scheduler-sa
+      priorityClassName: system-cluster-critical
+      volumes:
+      - name: scheduler-config
+        configMap:
+          name: drs-scheduler-config
+      containers:
+      - name: app
+        image: drs-scheduler:v1.23.1
+        imagePullPolicy: Never
+        command:
+        - ./drs-scheduler
+        - -v=4
+        - --config=/scheduler/scheduler-config.yaml
+        volumeMounts:
+        - name: scheduler-config
+          mountPath: /scheduler
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: Exists
+
