@@ -2,7 +2,7 @@
 A Deep Reinforcement Learning enhanced Kubernetes Scheduler for Microservice-based System
 
 ## File description
-- `scheduler/` : The source code of kube-scheduler for [Kubernetes (version 1.23.4)](https://github.com/kubernetes/kubernetes/tree/v1.23.4). The DRS scheduler is in registed in `scheduler/framework/plugins/dqn/dqn.go`
+- `drs-scheduler/` : DRS scheduler runs on the master node of the k8s cluster, based on Scheduling Framework.
 - `deploy/` :
     - `apps/` : the application configure file and deploy script.
 
@@ -15,29 +15,11 @@ A Deep Reinforcement Learning enhanced Kubernetes Scheduler for Microservice-bas
     | Data Write | IO-intensive | Read a file on the disk and write a copy | [jolyonjian/apps:io-1.0](https://hub.docker.com/repository/docker/jolyonjian/apps) |
 
     - `scripts/` : Scripts for cluster creation, initialization, deletion, etc.
-- `drs-scheduler/` : DRS scheduler runs on the master node of the k8s cluster
+- `drs-decision-maker/` : DRS decision maker runs on the master node of the k8s cluster
 - `drs-monitor/` : DRS monitor runs on the worker node of the k8s cluster
 
 ## Run
-1. Modify the source code of [Kubernetes (version 1.23.4)](https://github.com/kubernetes/kubernetes/tree/v1.23.4) to regist DRS scheduler and compile the project.
-```
-# Configure go environment
-
-# clone the source code of Kubernetes v1.23.4
-$ git clone -b v1.23.4 https://github.com/kubernetes/kubernetes.git
-$ mv ./kubernetes <path of go-workspace>/
-
-$ git clone https://github.com/JolyonJian/DRS
-$ cd DRS
-# Replace the source code of Kube-scheduler
-$ mv ./scheduler <path of go-workspace>/kubernetes/pkg/
-$ cd <path of go-workspace>/kubernetes
-$ make
-
-# After the first compilation you can only compile the kube-scheduler
-$ make cmd/kube-scheduler
-```
-2. Initalize the Kubernetes cluster.
+1. Initalize the Kubernetes cluster.
 ```
 # Start a k8s cluster (on the master node)
 $ cd <path of DRS>/deploy/scripts
@@ -52,10 +34,10 @@ $ cd <path of DRS>/deploy/apps
 $ ./apply.sh kube-flannel.yaml
 $ ./apply.sh drs-scheduler.yaml
 ```
-3. Start the DRS scheduler and DRS the monitor.
+2. Start the DRS decision maker and DRS the monitor.
 ```
-# Start the DRS scheduler (on the master node)
-$ cd <path of DRS>/scheduler
+# Start the DRS decision maker (on the master node)
+$ cd <path of DRS>/drs-decision-maker
 # The node ip needs to be configured according to your environment
 $ python dqn.py
 
@@ -64,7 +46,14 @@ $ cd <path of DRS>/monitor
 # The node ip and port need to be configured according to your environment
 $ ./monitor.sh
 ```
-
+3. Deployment the DRS scheduler.
+```
+# Start the DRS scheduler (on the master node)
+$ cd <path of DRS>/drs-scheduler
+# Ensure docker image exists, otherwise run `docker build -t drs-scheduler:v1.23.1 .`
+# Run DRS scheduler
+$ kubectl create -f deploy/
+```
 4. Deploy applications to the cluster.
 ```
 $ cd <path of DRS>/deploy/apps

@@ -18,7 +18,7 @@ const (
 	// Name is the name of the plugin used in the plugin registry and configurations.
 	Name = "DQNPlugin"
 	// ErrReason returned when node name doesn't match.
-	ErrReason = "This node is not the result given by the RL scheduler"
+	ErrReason = "this node is not the result given by the DRL scheduler"
 )
 
 type DQNPlugin struct {
@@ -32,7 +32,7 @@ func (dp DQNPlugin) Name() string {
 }
 
 func (dp DQNPlugin) Filter(ctx context.Context, cycleState *framework.CycleState, pod *v1.Pod, nodeInfo *framework.NodeInfo) *framework.Status {
-	fmt.Printf("[INFO] Filter pod: %v, node: %v\n", pod.Name, nodeInfo.Node().Name)
+	fmt.Printf("[INFO] Filtering pod: %v, node: %v\n", pod.Name, nodeInfo.Node().Name)
 	node := nodeInfo.Node()
 	if node == nil {
 		return framework.NewStatus(framework.Error, "node not found")
@@ -45,18 +45,19 @@ func (dp DQNPlugin) Filter(ctx context.Context, cycleState *framework.CycleState
 	resp, err := http.PostForm(schedulerUrl, urlValues)
 	if err != nil {
 		fmt.Printf("[ERROR] Get choose from %v failed\n", schedulerUrl)
-		fmt.Printf("[INFO] RL scheduling failed, all node will pass the filter\n\n")
+		fmt.Printf("[INFO] DRL scheduling failed, all node will pass the filter\n\n")
 		return framework.NewStatus(framework.Success, "")
 	}
 	body, _ := io.ReadAll(resp.Body)
 	choose := string(body)
+	fmt.Printf("[INFO] Get choose from %v successfully: %v\n", schedulerUrl, choose)
 
 	if node.Name == choose {
 		fmt.Printf("[INFO] Filter pod successfully: %v, node: %v\n\n", pod.Name, nodeInfo.Node().Name)
 		return framework.NewStatus(framework.Success, "")
 	} else {
 		fmt.Printf("[ERROR] Filter pod failed: %v, node: %v\n\n", pod.Name, nodeInfo.Node().Name)
-		return framework.NewStatus(framework.Error, fmt.Sprintf("%s: %s", ErrReason, choose))
+		return framework.NewStatus(framework.Error, ErrReason)
 	}
 }
 
