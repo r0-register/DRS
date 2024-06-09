@@ -17,8 +17,6 @@ import (
 const (
 	// Name is the name of the plugin used in the plugin registry and configurations.
 	Name = "DQNPlugin"
-	// ErrReason returned when node name doesn't match.
-	ErrReason = "this node is not the result given by the DRL scheduler"
 )
 
 type DQNPlugin struct {
@@ -32,6 +30,7 @@ func (dp DQNPlugin) Name() string {
 }
 
 func (dp DQNPlugin) Filter(ctx context.Context, cycleState *framework.CycleState, pod *v1.Pod, nodeInfo *framework.NodeInfo) *framework.Status {
+	fmt.Println()
 	fmt.Printf("[INFO] Filtering pod: %v, node: %v\n", pod.Name, nodeInfo.Node().Name)
 	node := nodeInfo.Node()
 	if node == nil {
@@ -57,7 +56,7 @@ func (dp DQNPlugin) Filter(ctx context.Context, cycleState *framework.CycleState
 		return framework.NewStatus(framework.Success, "")
 	} else {
 		fmt.Printf("[ERROR] Filter pod failed: %v, node: %v\n\n", pod.Name, nodeInfo.Node().Name)
-		return framework.NewStatus(framework.Error, ErrReason)
+		return framework.NewStatus(framework.Unschedulable, fmt.Sprintf("this node (%s) is not the result (%s) given by the DRL scheduler", node.Name, choose))
 	}
 }
 
